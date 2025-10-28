@@ -32,3 +32,5 @@ build/
 .vscode/
 
 node_modules/
+
+copilot-instructions
