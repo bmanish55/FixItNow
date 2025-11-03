@@ -10,6 +10,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const getAvatarUrl = (avatarPath) => {
+    console.log('DEBUG: getAvatarUrl called with:', avatarPath);
     if (!avatarPath) {
       console.log('DEBUG: No avatar path, using default');
       return '/default-avatar.svg';
@@ -23,6 +24,8 @@ const Navbar = () => {
     console.log('DEBUG: Avatar path:', avatarPath, '-> Full URL:', fullUrl);
     return fullUrl;
   };
+
+  console.log('DEBUG: Navbar rendering with user:', user ? { id: user.id, name: user.name, profileImage: user.profileImage, avatarUrl: user.avatarUrl } : 'no user');
 
   const handleLogout = () => {
     logout();

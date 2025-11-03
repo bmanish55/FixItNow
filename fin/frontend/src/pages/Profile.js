@@ -68,13 +68,16 @@ const Profile = () => {
         console.log('Avatar uploaded, URL:', avatarUrl);
       }
       console.log('Updating user profile with avatarUrl:', avatarUrl);
-      await apiService.updateUserProfile(user.id, { ...form, avatarUrl });
+      const updateResponse = await apiService.updateUserProfile(user.id, { ...form, avatarUrl });
       
-      // Update local state immediately - this syncs with AuthContext
-      const updatedUser = { ...user, ...form, avatarUrl };
-      setUser(updatedUser);
-      setAvatarPreview(avatarUrl);
-      updateUser(updatedUser);
+      // Use the response from backend which includes the updated user data
+      const updatedUserFromBackend = updateResponse.data.user || { ...user, ...form, avatarUrl };
+      console.log('Updated user from backend:', updatedUserFromBackend);
+      
+      // Update local state and AuthContext with the fresh data
+      setUser(updatedUserFromBackend);
+      setAvatarPreview(updatedUserFromBackend.profileImage || updatedUserFromBackend.avatarUrl || avatarUrl);
+      updateUser(updatedUserFromBackend);
       
       setEditMode(false);
       setAvatar(null);
