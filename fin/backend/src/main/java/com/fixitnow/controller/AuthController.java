@@ -29,6 +29,7 @@ import com.fixitnow.repository.UserRepository;
 import com.fixitnow.repository.PasswordResetTokenRepository;
 import com.fixitnow.security.JwtUtils;
 import com.fixitnow.security.UserPrincipal;
+import com.fixitnow.service.EmailService;
 
 import jakarta.validation.Valid;
 
@@ -50,17 +51,71 @@ public class AuthController {
 
     @Autowired
     JwtUtils jwtUtils;
+    
+    @Autowired
+    EmailService emailService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+            // Hardcoded admin credentials check
+            final String ADMIN_EMAIL = // enter email here
+            final String ADMIN_PASSWORD = // enter password here
+            final String ADMIN_NAME = "Admin";
+            
+            // Check if this is the hardcoded admin trying to log in
+            if (loginRequest.getEmail().equalsIgnoreCase(ADMIN_EMAIL)) {
+                // Verify hardcoded admin password (plain text comparison)
+                if (loginRequest.getPassword().equals(ADMIN_PASSWORD)) {
+                    // Create a temporary admin user object for response (not saved to DB)
+                    String jwt = jwtUtils.generateJwtToken(ADMIN_EMAIL, "ADMIN");
+                    String refreshToken = jwtUtils.generateRefreshToken(ADMIN_EMAIL);
+
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("accessToken", jwt);
+                    response.put("refreshToken", refreshToken);
+                    response.put("type", "Bearer");
+                    response.put("id", 0L); // Special ID for hardcoded admin
+                    response.put("name", ADMIN_NAME);
+                    response.put("email", ADMIN_EMAIL);
+                    response.put("role", "ADMIN");
+                    response.put("location", "");
+                    response.put("phone", "");
+                    response.put("profileImage", null);
+                    response.put("avatarUrl", null);
+                    
+                    return ResponseEntity.ok(response);
+                } else {
+                    // Wrong password for admin
+                    Map<String, String> error = new HashMap<>();
+                    error.put("message", "Incorrect password. Please try again.");
+                    return ResponseEntity.badRequest().body(error);
+                }
+            }
+            
+            // Check if user exists first
+            User user = userRepository.findByEmail(loginRequest.getEmail())
+                    .orElse(null);
+                    
+            if (user == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "No account found with this email address");
+                return ResponseEntity.badRequest().body(error);
+            }
+
+            // Try to authenticate
+            Authentication authentication;
+            try {
+                authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+            } catch (Exception authException) {
+                // Authentication failed - wrong password
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Incorrect password. Please try again.");
+                return ResponseEntity.badRequest().body(error);
+            }
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            
-            User user = userRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
                     
             // Block login for unverified providers
             if (user.getRole() == User.Role.PROVIDER && (user.getIsVerified() == null || !user.getIsVerified())) {
@@ -88,7 +143,7 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
-            error.put("message", "Invalid credentials");
+            error.put("message", "Authentication failed. Please check your credentials.");
             return ResponseEntity.badRequest().body(error);
         }
     }
@@ -159,39 +214,10 @@ public class AuthController {
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody SignupRequest signUpRequest) {
         Map<String, String> response = new HashMap<>();
         
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            response.put("message", "Error: Email is already taken!");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        try {
-            // Create new admin account
-            User admin = new User(signUpRequest.getName(),
-                                signUpRequest.getEmail(),
-                                encoder.encode(signUpRequest.getPassword()),
-                                User.Role.ADMIN);
-
-            admin.setLocation(signUpRequest.getLocation());
-            admin.setPhone(signUpRequest.getPhone());
-            // Admins are verified by default
-            admin.setIsVerified(true);
-
-            userRepository.save(admin);
-
-            System.out.println("DEBUG: Admin registered successfully - Email: " + admin.getEmail() + ", ID: " + admin.getId());
-
-            response.put("message", "Admin registered successfully!");
-            response.put("userId", admin.getId().toString());
-            response.put("email", admin.getEmail());
-            response.put("role", "ADMIN");
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.out.println("ERROR: Admin registration failed - " + e.getMessage());
-            e.printStackTrace();
-            response.put("message", "Error: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+        // DISABLED: Admin registration is not allowed
+        // Only one hardcoded admin account exists
+        response.put("message", "Admin registration is disabled. Please contact the system administrator.");
+        return ResponseEntity.status(403).body(response);
     }
 
     @GetMapping("/me")
@@ -238,8 +264,8 @@ public class AuthController {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            // Generate unique token
-            String token = UUID.randomUUID().toString();
+            // Generate 6-digit reset code
+            String resetCode = String.format("%06d", (int)(Math.random() * 1000000));
             
             // Token expires in 24 hours
             LocalDateTime expiryTime = LocalDateTime.now().plusHours(24);
@@ -250,18 +276,27 @@ public class AuthController {
             );
 
             // Create and save new reset token
-            PasswordResetToken resetToken = new PasswordResetToken(token, user, expiryTime);
+            PasswordResetToken resetToken = new PasswordResetToken(resetCode, user, expiryTime);
             passwordResetTokenRepository.save(resetToken);
 
-            // In production, you would send this token via email
-            System.out.println("DEBUG: Password reset token created for " + email + ": " + token);
-            System.out.println("DEBUG: Token expires at: " + expiryTime);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Password reset token sent to your email");
-            response.put("token", token); // In production, don't return this; send via email only
+            // Send reset code via email
+            try {
+                emailService.sendPasswordResetEmail(email, resetCode);
+                
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Password reset code sent to your email address. Please check your inbox.");
+                return ResponseEntity.ok(response);
+                
+            } catch (Exception emailError) {
+                // If email fails, still return the code in response for development
+                System.err.println("Email sending failed: " + emailError.getMessage());
+                
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Email service temporarily unavailable. Your reset code is: " + resetCode);
+                response.put("code", resetCode); // For development only
+                return ResponseEntity.ok(response);
+            }
             
-            return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("Error creating password reset token: " + e.getMessage());
             e.printStackTrace();
@@ -276,7 +311,7 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
         try {
             String email = request.get("email");
-            String token = request.get("token");
+            String code = request.get("code");
             String newPassword = request.get("newPassword");
 
             // Validation
@@ -286,9 +321,9 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(error);
             }
 
-            if (token == null || token.trim().isEmpty()) {
+            if (code == null || code.trim().isEmpty()) {
                 Map<String, String> error = new HashMap<>();
-                error.put("message", "Reset token is required");
+                error.put("message", "Reset code is required");
                 return ResponseEntity.badRequest().body(error);
             }
 
@@ -304,29 +339,29 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(error);
             }
 
-            // Find the reset token
-            PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                    .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+            // Find the reset token by code
+            PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(code)
+                    .orElseThrow(() -> new RuntimeException("Invalid or expired reset code"));
 
             // Check if token is expired
             if (resetToken.isExpired()) {
                 passwordResetTokenRepository.delete(resetToken);
                 Map<String, String> error = new HashMap<>();
-                error.put("message", "Reset token has expired");
+                error.put("message", "Reset code has expired. Please request a new one.");
                 return ResponseEntity.badRequest().body(error);
             }
 
             // Check if token has already been used
             if (resetToken.getUsed()) {
                 Map<String, String> error = new HashMap<>();
-                error.put("message", "Reset token has already been used");
+                error.put("message", "Reset code has already been used. Please request a new one.");
                 return ResponseEntity.badRequest().body(error);
             }
 
             // Verify email matches
             if (!resetToken.getUser().getEmail().equals(email)) {
                 Map<String, String> error = new HashMap<>();
-                error.put("message", "Email does not match reset token");
+                error.put("message", "Email does not match reset code");
                 return ResponseEntity.badRequest().body(error);
             }
 
@@ -339,7 +374,7 @@ public class AuthController {
             resetToken.setUsed(true);
             passwordResetTokenRepository.save(resetToken);
 
-            System.out.println("DEBUG: Password reset successful for user: " + email);
+            System.out.println("Password reset successful for user: " + email);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Password reset successfully! You can now login with your new password.");

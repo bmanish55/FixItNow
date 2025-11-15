@@ -180,47 +180,62 @@ const ServiceDetail = () => {
                       ? JSON.parse(service.availability) 
                       : service.availability;
                     
-                    const dayNames = {
-                      '0': 'Sunday',
-                      '1': 'Monday', 
-                      '2': 'Tuesday',
-                      '3': 'Wednesday',
-                      '4': 'Thursday',
-                      '5': 'Friday',
-                      '6': 'Saturday'
-                    };
+                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                    
+                    // Filter and display only days where provider is actually available
+                    const availableDays = dayNames
+                      .map((dayName, index) => {
+                        const dayKey = index.toString();
+                        const hours = availability[dayKey] || availability[dayName];
+                        
+                        // Skip if hours is empty, null, undefined, or "null" string
+                        if (!hours || hours === 'null' || hours === '' || hours === 'undefined') {
+                          return null;
+                        }
+                        
+                        // Handle different formats of hours data
+                        let displayHours = '';
+                        if (typeof hours === 'string') {
+                          displayHours = hours;
+                        } else if (typeof hours === 'object' && hours.start && hours.end) {
+                          displayHours = `${hours.start} - ${hours.end}`;
+                        } else if (typeof hours === 'object' && hours.available) {
+                          if (hours.available !== true) return null; // Skip unavailable days
+                          displayHours = hours.hours || 'Available';
+                        } else {
+                          displayHours = 'Available';
+                        }
+                        
+                        return {
+                          day: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+                          hours: displayHours
+                        };
+                      })
+                      .filter(Boolean); // Remove null entries
 
-                    return Object.entries(availability).map(([day, hours]) => {
-                      // Skip if hours is empty, null, or invalid
-                      if (!hours || hours === 'null' || hours === '') {
-                        return null;
-                      }
-                      
-                      // Handle different formats of hours data
-                      let displayHours = '';
-                      if (typeof hours === 'string') {
-                        displayHours = hours;
-                      } else if (typeof hours === 'object' && hours.start && hours.end) {
-                        displayHours = `${hours.start} - ${hours.end}`;
-                      } else if (typeof hours === 'object' && hours.available) {
-                        displayHours = hours.available === true ? 'Available' : 'Not Available';
-                      } else {
-                        displayHours = 'Available';
-                      }
-                      
+                    // If no available days found, show a message
+                    if (availableDays.length === 0) {
                       return (
-                        <div key={day} className="flex justify-between py-2">
-                          <span className="font-medium text-gray-600">
-                            {dayNames[day] || day}:
-                          </span>
-                          <span className="text-gray-900">{displayHours}</span>
+                        <div className="text-gray-500 italic">
+                          Contact provider for availability
                         </div>
                       );
-                    }).filter(Boolean);
+                    }
+
+                    // Display available days
+                    return availableDays.map((day, index) => (
+                      <div key={index} className="flex justify-between py-2 border-b border-gray-200 last:border-b-0">
+                        <span className="font-medium text-gray-700 capitalize">
+                          {day.day}:
+                        </span>
+                        <span className="text-gray-900">{day.hours}</span>
+                      </div>
+                    ));
                   } catch (error) {
+                    console.error('Error parsing availability:', error);
                     return (
                       <div className="text-gray-500 italic">
-                        Available - Contact provider for specific hours
+                        Contact provider for availability
                       </div>
                     );
                   }

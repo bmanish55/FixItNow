@@ -38,6 +38,7 @@ import AdminInsights from './pages/AdminInsights';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Refund from './pages/Refund';
+import Help from './pages/Help';
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ function App() {
                 <Route path="/services" element={<Services />} />
                 <Route path="/services-map" element={<ServicesWithMap />} />
                 <Route path="/services/:id" element={<ServiceDetail />} />
+                <Route path="/help" element={<Help />} />
                 <Route 
                   path="/dashboard" 
                   element={

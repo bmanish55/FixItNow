@@ -238,21 +238,18 @@ export const ChatProvider = ({ children }) => {
 
       const response = await apiService.sendMessage(messageData);
 
-      // Add message to local state immediately
+      // DON'T add message to local state here - let WebSocket handle it
+      // This prevents duplicate messages
+      
+      // WebSocket will receive the message and add it via the message handler
+      // Just update the conversation's last message info
       const conversationId = `${Math.min(user.id, receiverId)}-${Math.max(user.id, receiverId)}`;
-      const newMessage = {
-        ...response.data,
-        text: response.data?.text || response.data?.content || content.trim(),
-        roomId: response.data?.roomId || conversationId,
-      };
-      setMessages(prev => [...prev, newMessage]);
-
-      // Update conversation
+      
       setConversations(prev => prev.map(conv => {
         if (conv.id === conversationId) {
           return {
             ...conv,
-            lastMessageText: newMessage.text,
+            lastMessageText: content.trim(),
             lastMessageTime: new Date().toISOString(),
             lastMessageSender: user.name,
           };
@@ -260,7 +257,7 @@ export const ChatProvider = ({ children }) => {
         return conv;
       }));
 
-      return newMessage;
+      return response.data;
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;

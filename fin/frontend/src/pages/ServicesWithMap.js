@@ -490,7 +490,11 @@ const ServicesWithMap = () => {
             ) : (
               <>
                 {/* Services Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className={`grid gap-6 ${
+                  viewMode === 'both' 
+                    ? 'grid-cols-1' 
+                    : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                }`}>
                   {services.map((service) => (
                     <div
                       key={service.id}
@@ -508,31 +512,31 @@ const ServicesWithMap = () => {
                             }}
                           />
                         </div>
-                        <div className="p-6 flex-1">
-                          <div className="flex justify-between items-start mb-3">
-                            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                        <div className="p-4 flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-base font-semibold text-gray-900 line-clamp-1">
                               {service.title}
                             </h3>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
+                            <span className={`px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 ${
                               service.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                             }`}>
                               {service.active ? 'Active' : 'Inactive'}
                             </span>
                           </div>
 
-                        <p className="text-gray-600 mb-2">
+                        <p className="text-sm text-gray-600 mb-2">
                           by {service.providerName || service.provider?.name || 'Unknown Provider'}
                         </p>
 
-                        <div className="flex items-center mb-3">
-                          <span className="text-2xl font-bold text-blue-600">
+                        <div className="flex items-center mb-2">
+                          <span className="text-xl font-bold text-blue-600">
                             {formatCurrency(service.price)}
                           </span>
-                          <span className="text-gray-600 ml-1">/hour</span>
+                          <span className="text-sm text-gray-600 ml-1">/hour</span>
                         </div>
 
-                        <div className="flex items-center text-sm text-gray-600 mb-3">
-                          <span className="bg-gray-100 px-2 py-1 rounded-full mr-2">
+                        <div className="flex items-center text-xs text-gray-600 mb-2 flex-wrap gap-1">
+                          <span className="bg-gray-100 px-2 py-1 rounded-full">
                             {service.category}
                           </span>
                           <span className="bg-gray-100 px-2 py-1 rounded-full">
@@ -540,21 +544,7 @@ const ServicesWithMap = () => {
                           </span>
                         </div>
 
-                        {service.location && (
-                          <div className="flex items-center text-sm text-gray-600 mb-4">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {service.location}
-                          </div>
-                        )}
-
-                        <p className="text-gray-700 text-sm mb-4 line-clamp-3">
-                          {service.description}
-                        </p>
-
-                        <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        <button className="w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
                           View Details
                         </button>
                         </div>
