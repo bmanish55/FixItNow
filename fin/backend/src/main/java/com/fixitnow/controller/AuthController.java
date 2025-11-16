@@ -59,8 +59,8 @@ public class AuthController {
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             // Hardcoded admin credentials check
-            final String ADMIN_EMAIL = // enter email here
-            final String ADMIN_PASSWORD = // enter password here
+            final String ADMIN_EMAIL = "manish@gmail.com";
+            final String ADMIN_PASSWORD = "845905";
             final String ADMIN_NAME = "Admin";
             
             // Check if this is the hardcoded admin trying to log in

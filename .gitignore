@@ -1,0 +1,50 @@
+# Java crash logs
+*.log
+hs_err_*.log
+replay_pid*.log
+
+# Batch files
+*.bat
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backend - Maven
+backend/target/
+fin/backend/target/
+.classpath
+.project
+.settings/
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache
+*.iws
+*.iml
+*.ipr
+nbproject/
+nbbuild/
+dist/
+nbdist/
+
+# Frontend - Node
+node_modules/
+build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
