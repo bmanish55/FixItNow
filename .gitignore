@@ -31,9 +31,16 @@ nbbuild/
 dist/
 nbdist/
 
+# Backend - Config & Secrets (NEVER commit!)
+fin/backend/src/main/resources/application.properties
+fin/backend/src/main/resources/application-prod.properties
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-prod.properties
+
 # Frontend - Node
 node_modules/
 build/
+.env
 .env.local
 .env.development.local
 .env.test.local
