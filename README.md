@@ -3,6 +3,10 @@
 A full-stack web application connecting residents with local service providers like electricians, plumbers, carpenters, and more. Built with **Spring Boot 3 + React 18**, featuring real-time messaging, location-based search, and comprehensive admin tools. [View Project](https://fixitnow-frontend-m629.onrender.com/)
 
 
+https://github.com/user-attachments/assets/6cf11ac4-933f-49f7-81a4-5d443ca3ece7
+
+
+
 ## 🎯 Project Overview
 
 **FixItNow** is a marketplace platform that enables:
